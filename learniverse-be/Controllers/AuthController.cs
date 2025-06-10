@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using learniverse_be.Services.Interfaces;
 using learniverse_be.Utils;
 using Microsoft.AspNetCore.Authorization;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace learniverse_be.Controllers;
 
@@ -19,6 +20,10 @@ public class AuthController(AppDbContext context, ILogger<AuthController> logger
   private readonly IJwtTokenService _jwtTokenService = jwtTokenService;
   private readonly IMailService _mailService = mailService;
 
+  [SwaggerOperation(Summary = "Đăng nhập")]
+  [ProducesResponseType(typeof(ApiResponse<LoginResponseDto>), StatusCodes.Status200OK)]
+  [Consumes("application/json")]
+  [Produces("application/json")]
   [HttpPost("login")]
   public async Task<ActionResult<ApiResponse<LoginResponseDto>>> Login([FromBody] LoginDto request)
   {
@@ -86,9 +91,10 @@ public class AuthController(AppDbContext context, ILogger<AuthController> logger
     });
   }
 
+  [SwaggerOperation(Summary = "Đăng ký")]
   [HttpPost("register")]
-  [ProducesResponseType(typeof(ApiResponse<RegisterResponseDto>), StatusCodes.Status200OK)]
-  [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+  [ProducesResponseType(typeof(ApiResponse<RegisterResponseDto>), StatusCodes.Status201Created)]
+  [Consumes("application/json")]
   [Produces("application/json")]
   public async Task<ActionResult<ApiResponse<object>>> Register([FromBody] RegisterDto dto)
   {
@@ -154,6 +160,10 @@ public class AuthController(AppDbContext context, ILogger<AuthController> logger
     return Ok(new ApiResponse<RegisterResponseDto>(response, "Mã xác thực otp đã được gửi đến email mà bạn cung cấp. Vui lòng kiểm tra lại email.", null));
   }
 
+  [SwaggerOperation(Summary = "Xác thực OTP sau khi đăng ký")]
+  [ProducesResponseType(StatusCodes.Status200OK)]
+  [Consumes("application/json")]
+  [Produces("application/json")]
   [HttpPost("activate")]
   public async Task<ActionResult<ApiResponse<object>>> Activate([FromBody] ActivateDto dto)
   {
@@ -182,8 +192,12 @@ public class AuthController(AppDbContext context, ILogger<AuthController> logger
     return Ok(new ApiResponse<object>(null, "Xác thực thành công.", null));
   }
 
+  [SwaggerOperation(Summary = "Gửi lại mã xác thực OTP sau khi đăng ký")]
+  [ProducesResponseType(typeof(ApiResponse<ResendOtpResponseDto>), StatusCodes.Status200OK)]
+  [Consumes("application/json")]
+  [Produces("application/json")]
   [HttpPost("resend-otp")]
-  public async Task<ActionResult<ApiResponse<object>>> ResendOtp([FromBody] ResendOtpDto dto)
+  public async Task<ActionResult<ApiResponse<ResendOtpResponseDto>>> ResendOtp([FromBody] ResendOtpDto dto)
   {
     var auth = await _context.Auths.FirstOrDefaultAsync(a =>
         a.Id == dto.AuthId &&
@@ -226,8 +240,12 @@ public class AuthController(AppDbContext context, ILogger<AuthController> logger
     return Ok(new ApiResponse<ResendOtpResponseDto>(response, "Mã OTP mới đã được gửi đến email.", null));
   }
 
+  [SwaggerOperation(Summary = "Quên mật khẩu")]
+  [ProducesResponseType(typeof(ApiResponse<ForgetPasswordResponseDto>), StatusCodes.Status200OK)]
+  [Consumes("application/json")]
+  [Produces("application/json")]
   [HttpPost("forget-password")]
-  public async Task<ActionResult<ApiResponse<object>>> ForgetPassword([FromBody] ForgetPasswordDto dto)
+  public async Task<ActionResult<ApiResponse<ForgetPasswordResponseDto>>> ForgetPassword([FromBody] ForgetPasswordDto dto)
   {
     var auth = await _context.Auths
       .Include(a => a.User)
@@ -252,15 +270,19 @@ public class AuthController(AppDbContext context, ILogger<AuthController> logger
       return StatusCode(500, new ApiResponse<object>(null, "Không thể gửi email xác thực. Vui lòng thử lại sau.", null));
     }
 
-    var response = new RegisterResponseDto
+    var response = new ForgetPasswordResponseDto
     {
       AuthId = auth.Id,
       HashCode = otp.HashCode
     };
 
-    return Ok(new ApiResponse<RegisterResponseDto>(response, "Mã xác thực otp đã được gửi đến email mà bạn cung cấp. Vui lòng kiểm tra lại email.", null));
+    return Ok(new ApiResponse<ForgetPasswordResponseDto>(response, "Mã xác thực otp đã được gửi đến email mà bạn cung cấp. Vui lòng kiểm tra lại email.", null));
   }
 
+  [SwaggerOperation(Summary = "Kiểm tra OTP quên mật khẩu")]
+  [ProducesResponseType(StatusCodes.Status200OK)]
+  [Consumes("application/json")]
+  [Produces("application/json")]
   [HttpPost("confirm-forget-password")]
   public async Task<ActionResult<ApiResponse<object>>> ConfirmForgetPassword([FromBody] ConfirmForgetPasswordDto dto)
   {
@@ -274,6 +296,10 @@ public class AuthController(AppDbContext context, ILogger<AuthController> logger
     return Ok(new ApiResponse<object>(null, "Xác thực thành công.", null));
   }
 
+  [SwaggerOperation(Summary = "Đặt lại mật khẩu")]
+  [ProducesResponseType(StatusCodes.Status200OK)]
+  [Consumes("application/json")]
+  [Produces("application/json")]
   [HttpPost("reset-password")]
   public async Task<ActionResult<ApiResponse<object>>> ResetPassword([FromBody] ResetPasswordDto dto)
   {
@@ -304,6 +330,10 @@ public class AuthController(AppDbContext context, ILogger<AuthController> logger
     return Ok(new ApiResponse<object>(null, "Đặt lại mật khẩu thành công.", null));
   }
 
+  [SwaggerOperation(Summary = "Refresh access token")]
+  [ProducesResponseType(typeof(ApiResponse<RefreshTokenResponseDto>), StatusCodes.Status200OK)]
+  [Consumes("application/json")]
+  [Produces("application/json")]
   [HttpPost("refresh-token")]
   public async Task<ActionResult<ApiResponse<RefreshTokenResponseDto>>> RefreshToken([FromBody] RefreshTokenDto dto)
   {
