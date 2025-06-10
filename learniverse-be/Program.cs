@@ -1,11 +1,10 @@
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using learniverse_be.Data;
+using learniverse_be.Extensions;
 using learniverse_be.Models;
 using learniverse_be.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -13,7 +12,7 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddCors(options =>
 {
@@ -118,10 +117,21 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.EnableAnnotations();
+  c.EnableAnnotations();
+});
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+  options.ListenAnyIP(8080);
 });
 
 var app = builder.Build();
+
+// using (var scope = app.Services.CreateScope())
+// {
+//     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+//     db.Database.Migrate();
+// }
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -139,6 +149,7 @@ if (app.Environment.IsDevelopment())
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
   });
 }
+app.ApplyMigrations();
 
 app.UseHttpsRedirection();
 app.UseRouting();
@@ -148,7 +159,7 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapStaticAssets();
+// app.MapStaticAssets();
 
 // app.MapControllerRoute(
 //     name: "default",
