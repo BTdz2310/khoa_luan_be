@@ -1,11 +1,13 @@
 version: '3.4'
 
 services:
-  db:
-    container_name: db
-    image: "mcr.microsoft.com/mssql/server"
+  postgis:
+    image: postgis/postgis:15-3.3-alpine
+    container_name: postgis
     environment:
-      MSSQL_SA_PASSWORD: "CJnEmigeG!@JLipcRy4&2MNv"
-      ACCEPT_EULA: "Y"
+      POSTGRES_DB: db_db
+      POSTGRES_USER: db_user
+      POSTGRES_PASSWORD: db_pass
     ports:
-      - "1433:1433"
+      - "5432:5432"
+    restart: "no"
