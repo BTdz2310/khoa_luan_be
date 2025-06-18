@@ -64,6 +64,44 @@ namespace learniverse_be.Migrations
                     b.ToTable("Auths");
                 });
 
+            modelBuilder.Entity("learniverse_be.Models.Category", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Color")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("IconUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Categories");
+                });
+
             modelBuilder.Entity("learniverse_be.Models.Otp", b =>
                 {
                     b.Property<int>("Id")
@@ -121,10 +159,24 @@ namespace learniverse_be.Migrations
                     b.Property<int>("AuthId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Avatar")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Bio")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BirthDate")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
+
+                    b.Property<int>("Gender")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -132,6 +184,24 @@ namespace learniverse_be.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("learniverse_be.Models.UserCategory", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("InterestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UserId", "CategoryId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("UserCategory");
                 });
 
             modelBuilder.Entity("learniverse_be.Models.Otp", b =>
@@ -154,6 +224,25 @@ namespace learniverse_be.Migrations
                     b.Navigation("Auth");
                 });
 
+            modelBuilder.Entity("learniverse_be.Models.UserCategory", b =>
+                {
+                    b.HasOne("learniverse_be.Models.Category", "Category")
+                        .WithMany("UserCategories")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("learniverse_be.Models.User", "User")
+                        .WithMany("UserCategories")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("learniverse_be.Models.Auth", b =>
                 {
                     b.Navigation("Otp")
@@ -161,6 +250,16 @@ namespace learniverse_be.Migrations
 
                     b.Navigation("User")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("learniverse_be.Models.Category", b =>
+                {
+                    b.Navigation("UserCategories");
+                });
+
+            modelBuilder.Entity("learniverse_be.Models.User", b =>
+                {
+                    b.Navigation("UserCategories");
                 });
 #pragma warning restore 612, 618
         }

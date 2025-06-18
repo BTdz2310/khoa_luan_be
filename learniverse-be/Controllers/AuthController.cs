@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using learniverse_be.Models;
 using System.Security.Claims;
@@ -6,7 +5,6 @@ using learniverse_be.Data;
 using Microsoft.EntityFrameworkCore;
 using learniverse_be.Services.Interfaces;
 using learniverse_be.Utils;
-using Microsoft.AspNetCore.Authorization;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace learniverse_be.Controllers;
@@ -80,6 +78,10 @@ public class AuthController(AppDbContext context, ILogger<AuthController> logger
         {
           UserId = user.Id,
           FullName = user.FullName,
+          Avatar = user.Avatar,
+          Bio = user.Bio,
+          BirthDate = user.BirthDate,
+          Gender = user.Gender
         }
       }
     };

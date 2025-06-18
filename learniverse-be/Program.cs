@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Amazon.S3;
 using learniverse_be.Data;
 using learniverse_be.Extensions;
 using learniverse_be.Models;
@@ -113,12 +114,43 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
   c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+
+  c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+  {
+    In = ParameterLocation.Header,
+    Description = "Enter 'Bearer {token}'",
+    Name = "Authorization",
+    Type = SecuritySchemeType.ApiKey,
+    Scheme = "Bearer"
+  });
+
+  c.AddSecurityRequirement(new OpenApiSecurityRequirement()
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                },
+                Scheme = "oauth2",
+                Name = "Bearer",
+                In = ParameterLocation.Header
+            },
+            new List<string>()
+        }
+    });
 });
 
 builder.Services.AddSwaggerGen(c =>
 {
   c.EnableAnnotations();
 });
+
+builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
+builder.Services.AddAWSService<IAmazonS3>();
+builder.Services.AddScoped<IS3Service, S3Service>();
 
 builder.WebHost.ConfigureKestrel(options =>
 {
