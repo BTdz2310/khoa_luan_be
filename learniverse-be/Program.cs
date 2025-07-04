@@ -4,6 +4,7 @@ using Amazon.S3;
 using learniverse_be.Data;
 using learniverse_be.Extensions;
 using learniverse_be.Models;
+using learniverse_be.Services;
 using learniverse_be.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -76,10 +77,8 @@ builder.Services.AddControllers()
 //   });
 
 
-// Đăng ký config JwtSettings để IOptions hoạt động đúng
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
-// Sau đó config AddJwtBearer, lấy trực tiếp từ config để tránh null
 builder.Services.AddAuthentication(options =>
 {
   options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -151,6 +150,11 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
 builder.Services.AddAWSService<IAmazonS3>();
 builder.Services.AddScoped<IS3Service, S3Service>();
+
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IInstructorService, InstructorService>();
 
 builder.WebHost.ConfigureKestrel(options =>
 {

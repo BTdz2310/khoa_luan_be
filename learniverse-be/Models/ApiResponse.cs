@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace learniverse_be.Models;
 
-public class ApiResponse<T>
+public class ApiResponse<T> where T : class
 {
     [JsonPropertyName("data")]
     public T? Data { get; set; }
@@ -13,12 +13,20 @@ public class ApiResponse<T>
     [JsonPropertyName("errors")]
     public List<FieldError>? Errors { get; set; }
 
+    public int StatusCode { get; set; }
+
     public ApiResponse(T? data = default, string? message = null, List<FieldError>? errors = null)
     {
         Data = data;
         Message = message;
         Errors = errors;
     }
+
+    public static ApiResponse<T> Success(T data, string msg = "", int statusCode = 200) =>
+        new() { Data = data, Message = msg, StatusCode = statusCode };
+
+    public static ApiResponse<T> Error(string msg, int statusCode = 400) =>
+        new() { Data = null, Message = msg, StatusCode = statusCode };
 }
 
 public class FieldError

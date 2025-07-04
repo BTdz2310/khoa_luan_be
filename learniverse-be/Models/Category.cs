@@ -26,4 +26,6 @@ public class Category
   public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
   public ICollection<UserCategory> UserCategories { get; set; } = default!;
+
+  public List<Course> Courses { get; set; } = new();
 }

@@ -3,11 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 
 public static class ResponseHelper
 {
-  public static IActionResult Success<T>(T data, string? message = null)
-  {
-    return new OkObjectResult(new ApiResponse<T>(data, message));
-  }
-
   public static IActionResult Fail(string message, List<FieldError>? errors = null)
   {
     return new BadRequestObjectResult(new ApiResponse<object>(null, message, errors));
