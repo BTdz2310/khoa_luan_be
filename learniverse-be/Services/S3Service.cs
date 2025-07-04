@@ -24,6 +24,7 @@ public class S3Service : IS3Service
     };
 
     var response = await _s3Client.PutObjectAsync(request);
+    Console.WriteLine(GetFileUrl(fileName));
     return GetFileUrl(fileName);
   }
 

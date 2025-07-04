@@ -16,5 +16,5 @@ public class CreateProfileDTO
   public string Bio { get; set; } = string.Empty;
 
   [Required]
-  public List<int> Interestings { get; set; }
+  public List<int> Interestings { get; set; } = new();
 }

@@ -21,6 +21,7 @@ public class Auth
   public byte[] Salt { get; set; }
 
   public User User { get; set; } = default!;
+  public Instructor Instructor { get; set; } = default!;
   public Otp Otp { get; set; } = default!;
 
   public bool IsActive { get; set; } = false;

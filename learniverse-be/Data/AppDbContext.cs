@@ -12,6 +12,11 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Otp> Otps => Set<Otp>();
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<UserCategory> UserCategories => Set<UserCategory>();
+    public DbSet<Instructor> Instructors => Set<Instructor>();
+    public DbSet<Course> Courses => Set<Course>();
+    public DbSet<Section> Sections => Set<Section>();
+    public DbSet<Lecture> Lectures => Set<Lecture>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -42,5 +47,15 @@ public class AppDbContext : DbContext
             .HasOne(uc => uc.Category)
             .WithMany(c => c.UserCategories)
             .HasForeignKey(uc => uc.CategoryId);
+
+        modelBuilder.Entity<Instructor>()
+            .HasIndex(a => a.DisplayName)
+            .IsUnique();
+
+        modelBuilder.Entity<Section>()
+            .HasMany(s => s.Lectures)
+            .WithOne(l => l.Section)
+            .HasForeignKey(l => l.SectionId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
