@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using learniverse_be.Data;
@@ -12,9 +13,11 @@ using learniverse_be.Data;
 namespace learniverse_be.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250721075820_fix-lecture")]
+    partial class fixlecture
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -61,75 +64,6 @@ namespace learniverse_be.Migrations
                     b.HasIndex("SectionId");
 
                     b.ToTable("Lectures");
-                });
-
-            modelBuilder.Entity("Livestream", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Livestream");
-                });
-
-            modelBuilder.Entity("Video", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int?>("DurationSeconds")
-                        .HasColumnType("integer");
-
-                    b.Property<long>("FileSize")
-                        .HasColumnType("bigint");
-
-                    b.Property<int?>("Height")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("HlsDirectoryKey")
-                        .HasColumnType("text");
-
-                    b.Property<string>("HlsMasterPlaylistUrl")
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("LectureId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LivestreamId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("OriginalFileKey")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("OriginalFileName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("OriginalMimeType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UploadedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("Width")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LectureId")
-                        .IsUnique();
-
-                    b.HasIndex("LivestreamId");
-
-                    b.ToTable("Videos");
                 });
 
             modelBuilder.Entity("learniverse_be.Models.Auth", b =>
@@ -489,21 +423,6 @@ namespace learniverse_be.Migrations
                     b.Navigation("Section");
                 });
 
-            modelBuilder.Entity("Video", b =>
-                {
-                    b.HasOne("Lecture", "Lecture")
-                        .WithOne("Video")
-                        .HasForeignKey("Video", "LectureId");
-
-                    b.HasOne("Livestream", "Livestream")
-                        .WithMany()
-                        .HasForeignKey("LivestreamId");
-
-                    b.Navigation("Lecture");
-
-                    b.Navigation("Livestream");
-                });
-
             modelBuilder.Entity("learniverse_be.Models.Course", b =>
                 {
                     b.HasOne("learniverse_be.Models.Category", "Category")
@@ -546,7 +465,7 @@ namespace learniverse_be.Migrations
             modelBuilder.Entity("learniverse_be.Models.Section", b =>
                 {
                     b.HasOne("learniverse_be.Models.Course", "Course")
-                        .WithMany("Sections")
+                        .WithMany()
                         .HasForeignKey("CourseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -584,11 +503,6 @@ namespace learniverse_be.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Lecture", b =>
-                {
-                    b.Navigation("Video");
-                });
-
             modelBuilder.Entity("learniverse_be.Models.Auth", b =>
                 {
                     b.Navigation("Instructor")
@@ -606,11 +520,6 @@ namespace learniverse_be.Migrations
                     b.Navigation("Courses");
 
                     b.Navigation("UserCategories");
-                });
-
-            modelBuilder.Entity("learniverse_be.Models.Course", b =>
-                {
-                    b.Navigation("Sections");
                 });
 
             modelBuilder.Entity("learniverse_be.Models.Instructor", b =>

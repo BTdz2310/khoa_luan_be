@@ -28,6 +28,20 @@ public class S3Service : IS3Service
     return GetFileUrl(fileName);
   }
 
+  public string GenerateUploadUrl(string filePath, TimeSpan validDuration, string contentType)
+  {
+    var request = new GetPreSignedUrlRequest
+    {
+      BucketName = _bucketName,
+      Key = filePath,
+      Verb = HttpVerb.PUT,
+      Expires = DateTime.UtcNow.Add(validDuration),
+      ContentType = contentType
+    };
+
+    return _s3Client.GetPreSignedURL(request);
+  }
+
   public Task DeleteFileAsync(string fileKey) =>
     _s3Client.DeleteObjectAsync(_bucketName, fileKey);
 

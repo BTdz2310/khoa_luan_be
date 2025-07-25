@@ -20,10 +20,13 @@ public class Lecture
   public string? Description { get; set; }
 
   [Required]
-  public int Order { get; set; }
+  [Column(TypeName = "decimal(18,6)")]
+  public decimal Order { get; set; }
 
   public bool IsPreviewable { get; set; } = false;
 
   public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
+  public DateTime UpdatedAt { get; set; }
+  public Status Status { get; set; }
+  public Video? Video { get; set; } = default!;
 }

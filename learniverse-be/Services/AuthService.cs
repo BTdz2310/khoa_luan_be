@@ -23,7 +23,7 @@ public class AuthService : IAuthService
 
   public async Task<ApiResponse<LoginResponseDto>> LoginAsync(LoginDto dto)
   {
-    var auth = await _context.Auths.Include(a => a.User)
+    var auth = await _context.Auths.Include(a => a.User).Include(a => a.Instructor)
       .SingleOrDefaultAsync(a => a.Username == dto.Username && a.IsActive);
 
     if (auth == null || !PasswordHelper.VerifyPassword(dto.Password, auth.Salt, auth.PasswordHash))
@@ -37,6 +37,7 @@ public class AuthService : IAuthService
       new Claim("authId", auth.Id.ToString()),
       new Claim("userId", auth.User?.Id.ToString() ?? string.Empty),
       new Claim("fullName", auth.User?.FullName ?? string.Empty),
+      new Claim("instructorId", auth.Instructor?.Id.ToString() ?? string.Empty)
     };
 
     var response = new LoginResponseDto
@@ -288,6 +289,7 @@ public class AuthService : IAuthService
 
     var auth = await _context.Auths
       .Include(a => a.User)
+      .Include(a => a.Instructor)
       .FirstOrDefaultAsync(a => a.Id == authIdInt && a.IsActive);
 
     if (auth == null)
@@ -301,6 +303,7 @@ public class AuthService : IAuthService
       new Claim("authId", auth.Id.ToString()),
       new Claim("userId", auth.User?.Id.ToString() ?? string.Empty),
       new Claim("fullName", auth.User?.FullName ?? string.Empty),
+      new Claim("instructorId", auth.Instructor?.Id.ToString() ?? string.Empty)
     };
 
     var newAccessToken = _jwtService.GenerateAccessToken(claims);

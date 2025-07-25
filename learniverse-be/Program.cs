@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Amazon.S3;
 using learniverse_be.Data;
 using learniverse_be.Extensions;
@@ -7,6 +8,7 @@ using learniverse_be.Models;
 using learniverse_be.Services;
 using learniverse_be.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -101,6 +103,12 @@ builder.Services.AddAuthentication(options =>
   };
 });
 
+// builder.Services.AddControllers()
+// .AddJsonOptions(options =>
+// {
+//   options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+// });
+
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
 
 builder.Services.AddTransient<IMailService, MailService>();
@@ -155,6 +163,7 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IInstructorService, InstructorService>();
+builder.Services.AddScoped<ICourseService, CourseService>();
 
 builder.WebHost.ConfigureKestrel(options =>
 {

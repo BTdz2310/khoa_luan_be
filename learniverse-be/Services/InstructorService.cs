@@ -74,6 +74,25 @@ public class InstructorService : IInstructorService
       UpdatedAt = instructor.UpdatedAt,
       Status = instructor.Status,
       Degree = instructor.Degree,
-    }, "Đăng ký thành công giảng viên.", (int) HttpStatusCode.Created);
+    }, "Đăng ký thành công giảng viên.", (int)HttpStatusCode.Created);
+  }
+
+  public InstructorResponseDto InstructorToDto(Instructor instructor)
+  {
+    return new InstructorResponseDto
+    {
+      Id = instructor.Id,
+      DisplayName = instructor.DisplayName,
+      Headline = instructor.Headline,
+      Avatar = instructor.Avatar,
+      Bio = instructor.Bio,
+      Languages = instructor.Languages,
+      Expertise = instructor.Expertise,
+      ExperienceYears = instructor.ExperienceYears,
+      CreatedAt = instructor.CreatedAt,
+      UpdatedAt = instructor.UpdatedAt,
+      Status = instructor.Status,
+      Degree = instructor.Degree,
+    };
   }
 }

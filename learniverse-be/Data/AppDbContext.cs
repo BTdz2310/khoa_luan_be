@@ -17,6 +17,8 @@ public class AppDbContext : DbContext
     public DbSet<Course> Courses => Set<Course>();
     public DbSet<Section> Sections => Set<Section>();
     public DbSet<Lecture> Lectures => Set<Lecture>();
+    public DbSet<Video> Videos => Set<Video>();
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

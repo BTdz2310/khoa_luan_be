@@ -21,7 +21,7 @@ public class InstructorController(ILogger<InstructorController> logger, IInstruc
 
     if (string.IsNullOrEmpty(authId) || !int.TryParse(authId, out var authIdInt))
     {
-      return ApiResponse<InstructorResponseDto>.Error("Token không hợp lệ.", (int)HttpStatusCode.Unauthorized);
+      return StatusCode((int)HttpStatusCode.Unauthorized, ApiResponse<CourseResponseDTO>.Error("Token không hợp lệ.", (int)HttpStatusCode.Unauthorized));
     }
 
     var result = await _instructorService.CreateInstructorAsync(authIdInt, dto, file);
