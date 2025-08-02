@@ -74,6 +74,6 @@ public class InstructorService : IInstructorService
       UpdatedAt = instructor.UpdatedAt,
       Status = instructor.Status,
       Degree = instructor.Degree,
-    }, "Đăng ký thành công giảng viên.", (int) HttpStatusCode.Created);
+    }, "Đăng ký thành công giảng viên.", (int)HttpStatusCode.Created);
   }
 }

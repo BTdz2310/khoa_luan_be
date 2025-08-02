@@ -12,18 +12,20 @@ public class AuthService : IAuthService
   private readonly IJwtTokenService _jwtService;
   private readonly IMailService _mailService;
   private readonly ILogger<AuthService> _logger;
+  private readonly IDtoService _dtoService;
 
-  public AuthService(AppDbContext context, IJwtTokenService jwtService, IMailService mailService, ILogger<AuthService> logger)
+  public AuthService(AppDbContext context, IJwtTokenService jwtService, IMailService mailService, ILogger<AuthService> logger, IDtoService dtoService)
   {
     _context = context;
     _jwtService = jwtService;
     _mailService = mailService;
     _logger = logger;
+    _dtoService = dtoService;
   }
 
   public async Task<ApiResponse<LoginResponseDto>> LoginAsync(LoginDto dto)
   {
-    var auth = await _context.Auths.Include(a => a.User)
+    var auth = await _context.Auths.Include(a => a.User).Include(a => a.Instructor)
       .SingleOrDefaultAsync(a => a.Username == dto.Username && a.IsActive);
 
     if (auth == null || !PasswordHelper.VerifyPassword(dto.Password, auth.Salt, auth.PasswordHash))
@@ -37,6 +39,8 @@ public class AuthService : IAuthService
       new Claim("authId", auth.Id.ToString()),
       new Claim("userId", auth.User?.Id.ToString() ?? string.Empty),
       new Claim("fullName", auth.User?.FullName ?? string.Empty),
+      new Claim("role", auth.Role.ToString()),
+      new Claim("instructorId", auth.Instructor?.Id.ToString() ?? string.Empty)
     };
 
     var response = new LoginResponseDto
@@ -48,6 +52,7 @@ public class AuthService : IAuthService
         AuthId = auth.Id,
         Username = auth.Username,
         Email = auth.Email,
+        Role = auth.Role,
         CreatedAt = auth.CreatedAt,
         User = auth.User == null ? null : new UserDto
         {
@@ -57,7 +62,8 @@ public class AuthService : IAuthService
           Bio = auth.User.Bio,
           BirthDate = auth.User.BirthDate,
           Gender = auth.User.Gender
-        }
+        },
+        Instructor = auth.Instructor == null ? null : _dtoService.InstructorToDto(auth.Instructor)
       }
     };
 
@@ -288,6 +294,7 @@ public class AuthService : IAuthService
 
     var auth = await _context.Auths
       .Include(a => a.User)
+      .Include(a => a.Instructor)
       .FirstOrDefaultAsync(a => a.Id == authIdInt && a.IsActive);
 
     if (auth == null)
@@ -301,6 +308,8 @@ public class AuthService : IAuthService
       new Claim("authId", auth.Id.ToString()),
       new Claim("userId", auth.User?.Id.ToString() ?? string.Empty),
       new Claim("fullName", auth.User?.FullName ?? string.Empty),
+      new Claim("role", auth.Role.ToString()),
+      new Claim("instructorId", auth.Instructor?.Id.ToString() ?? string.Empty)
     };
 
     var newAccessToken = _jwtService.GenerateAccessToken(claims);

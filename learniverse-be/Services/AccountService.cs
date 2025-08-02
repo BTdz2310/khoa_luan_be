@@ -37,6 +37,7 @@ public class AccountService : IAccountService
       Username = auth.Username,
       Email = auth.Email,
       CreatedAt = auth.CreatedAt,
+      Role = auth.Role,
       User = auth.User == null ? null : new UserDto
       {
         UserId = auth.User.Id,

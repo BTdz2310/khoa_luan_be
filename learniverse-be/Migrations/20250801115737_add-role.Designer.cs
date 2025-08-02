@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using learniverse_be.Data;
@@ -12,9 +13,11 @@ using learniverse_be.Data;
 namespace learniverse_be.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250801115737_add-role")]
+    partial class addrole
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -44,6 +47,9 @@ namespace learniverse_be.Migrations
 
                     b.Property<Guid>("SectionId")
                         .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -360,47 +366,6 @@ namespace learniverse_be.Migrations
                         .IsUnique();
 
                     b.ToTable("Instructors");
-                });
-
-            modelBuilder.Entity("learniverse_be.Models.LectureModeration", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("ActionType")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("AdminId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("InstructorId")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("LectureId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("NewData")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Reason")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("ReviewedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("SectionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("LectureModerations");
                 });
 
             modelBuilder.Entity("learniverse_be.Models.Livestream", b =>

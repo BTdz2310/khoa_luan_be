@@ -20,7 +20,7 @@ public class AccountController(ILogger<AccountController> logger, IAccountServic
 
     if (string.IsNullOrEmpty(authId) || !int.TryParse(authId, out var authIdInt))
     {
-      return ApiResponse<UserResponseDTO>.Error("Token không hợp lệ.", (int)HttpStatusCode.Unauthorized);
+      return StatusCode((int)HttpStatusCode.Unauthorized, ApiResponse<CourseResponseDTO>.Error("Token không hợp lệ.", (int)HttpStatusCode.Unauthorized));
     }
 
     var result = await _accountService.GetProfileAsync(authIdInt);
@@ -36,7 +36,7 @@ public class AccountController(ILogger<AccountController> logger, IAccountServic
 
     if (string.IsNullOrEmpty(authId) || !int.TryParse(authId, out var authIdInt))
     {
-      return ApiResponse<UserResponseDTO>.Error("Token không hợp lệ.", (int)HttpStatusCode.Unauthorized);
+      return StatusCode((int)HttpStatusCode.Unauthorized, ApiResponse<CourseResponseDTO>.Error("Token không hợp lệ.", (int)HttpStatusCode.Unauthorized));
     }
 
     var result = await _accountService.CreateProfileAsync(authIdInt, dto, file);

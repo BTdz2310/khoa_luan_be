@@ -1,8 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace learniverse_be.Models;
 
+[Index(nameof(Slug), IsUnique = true)]
 public class Course
 {
   [Key]
@@ -22,16 +24,20 @@ public class Course
 
   [Required]
   [MaxLength(255)]
+  public string Image { get; set; } = default!;
+
+  [Required]
+  [MaxLength(255)]
   public string Slug { get; set; } = default!;
 
   [MaxLength(100)]
-  public string Level { get; set; } = default!;
+  public Level Level { get; set; } = default!;
 
   [MaxLength(1000)]
   public string ShortDescription { get; set; } = default!;
 
   [MaxLength(100)]
-  public string Language { get; set; } = default!;
+  public Language Language { get; set; } = default!;
 
   [Required]
   public Status Status { get; set; } = default!;
@@ -42,4 +48,8 @@ public class Course
   public List<string> Requirements { get; set; } = new List<string>();
 
   public List<string> LearningObjectives { get; set; } = new List<string>();
+
+  public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+  public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+  public List<Section> Sections { get; set; } = new();
 }
