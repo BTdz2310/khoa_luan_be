@@ -29,17 +29,4 @@ public class CategoryService : ICategoryService
 
     return ApiResponse<List<CategoriesDto>>.Success(categories, "Lấy thông tin thành công.");
   }
-
-  public CategoriesDto CategotyToDto(Category category)
-  {
-    return new CategoriesDto
-    {
-      Id = category.Id,
-      Code = category.Code,
-      Name = category.Name,
-      Description = category.Description,
-      IconUrl = category.IconUrl,
-      Color = category.Color
-    };
-  }
 }

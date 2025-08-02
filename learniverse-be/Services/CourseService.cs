@@ -1,5 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
-using System.Reflection.PortableExecutable;
 using System.Text.Json;
 using learniverse_be.Data;
 using learniverse_be.DTOs;
@@ -13,107 +13,36 @@ public class CourseService : ICourseService
 {
   private readonly AppDbContext _context;
   private readonly IS3Service _s3Service;
-  private readonly IInstructorService _instructorService;
-  private readonly ICategoryService _categoryService;
+  private readonly IDtoService _dtoService;
 
-  public CourseService(AppDbContext context, IS3Service s3Service, IInstructorService instructorService, ICategoryService categoryService)
+  public CourseService(AppDbContext context, IS3Service s3Service, IDtoService dtoService)
   {
     _context = context;
     _s3Service = s3Service;
-    _instructorService = instructorService;
-    _categoryService = categoryService;
+    _dtoService = dtoService;
   }
 
-  public CourseResponseDTO CourseToDto(Course course)
+  public async Task<bool> CheckPermission(int authId, Guid courseId)
   {
-    return new CourseResponseDTO
-    {
-      Id = course.Id,
-      Category = _categoryService.CategotyToDto(course.Category),
-      Instructor = _instructorService.InstructorToDto(course.Instructor),
-      Title = course.Title,
-      Slug = course.Slug,
-      Level = course.Level,
-      ShortDescription = course.ShortDescription,
-      Language = course.Language,
-      Status = course.Status,
-      Requirements = course.Requirements,
-      LearningObjectives = course.LearningObjectives,
-      Price = course.Price,
-      CreatedAt = course.CreatedAt,
-      UpdatedAt = course.UpdatedAt,
-      Image = course.Image
-    };
-  }
+    var auth = await _context.Auths
+      .Include(a => a.Instructor)
+      .Include(a => a.User)
+      .FirstOrDefaultAsync(a => a.Id == authId);
 
-  public LectureResponseDTO LectureToDto(Lecture lecture)
-  {
-    return new LectureResponseDTO
+    if (auth == null)
     {
-      Id = lecture.Id,
-      Title = lecture.Title,
-      Description = lecture.Description,
-      Order = lecture.Order,
-      SectionId = lecture.SectionId,
-      IsPreviewable = lecture.IsPreviewable,
-      CreatedAt = lecture.CreatedAt,
-      UpdatedAt = lecture.UpdatedAt,
-      Status = lecture.Status,
-    };
-  }
+      return false;
+    }
 
-  public SectionSDto StructureCourse(Section section)
-  {
-    return new SectionSDto
-    {
-      Id = section.Id,
-      Title = section.Title,
-      Order = section.Order,
-      CourseId = section.CourseId,
-      Lectures = [.. section.Lectures.Select(l => new LectureSDto {
-        Id = l.Id,
-        Title = l.Title,
-        Order = l.Order,
-        SectionId = l.SectionId,
-        IsPreviewable = l.IsPreviewable,
-        Status = l.Status
-      })]
-    };
-  }
+    var course = await _context.Courses
+      .FirstOrDefaultAsync(c => c.Id == courseId);
 
-  public SectionResponseDto SectionToDto(Section lecture)
-  {
-    return new SectionResponseDto
+    if (course == null)
     {
-      Id = lecture.Id,
-      Title = lecture.Title,
-      CourseId = lecture.CourseId,
-      Order = lecture.Order,
-      CreatedAt = lecture.CreatedAt,
-      UpdatedAt = lecture.UpdatedAt,
-      Lectures = [.. lecture.Lectures.Select(l => LectureToDto(l))]
-    };
-  }
+      return false;
+    }
 
-  public VideoResponseDto VideoToDto(Video video)
-  {
-    return new VideoResponseDto
-    {
-      Id = video.Id,
-      LectureId = video.LectureId,
-      LivestreamId = video.LivestreamId,
-      OriginalFileName = video.OriginalFileName,
-      OriginalFileKey = video.OriginalFileKey,
-      OriginalMimeType = video.OriginalMimeType,
-      FileSize = video.FileSize,
-      HlsMasterPlaylistUrl = video.HlsMasterPlaylistUrl,
-      HlsDirectoryKey = video.HlsDirectoryKey,
-      DurationSeconds = video.DurationSeconds,
-      Width = video.Width,
-      Height = video.Height,
-      Status = video.Status,
-      UploadedAt = video.UploadedAt,
-    };
+    return auth.Instructor.Id == course.InstructorId;
   }
 
   public async Task<ApiResponse<List<CourseResponseDTO>>> GetCoursesAsync(int authId)
@@ -135,8 +64,8 @@ public class CourseService : ICourseService
     return ApiResponse<List<CourseResponseDTO>>.Success([.. courses.Select(c => new CourseResponseDTO
     {
       Id = c.Id,
-      Category = _categoryService.CategotyToDto(c.Category),
-      Instructor = _instructorService.InstructorToDto(auth.Instructor),
+      Category = _dtoService.CategotyToDto(c.Category),
+      Instructor = _dtoService.InstructorToDto(auth.Instructor),
       Title = c.Title,
       Slug = c.Slug,
       Level = c.Level,
@@ -152,6 +81,89 @@ public class CourseService : ICourseService
     })], "Lấy danh sách khoá học.");
   }
 
+  public async Task<bool> ValidatePermissionCourse(Course course, int identifierId, Role role)
+  {
+    if (role == Role.Instructor)
+    {
+      return course.InstructorId == identifierId;
+    }
+    else if (role == Role.User)
+    {
+      var enrollment = await _context.Enrollments.FirstOrDefaultAsync(e => e.UserId == identifierId && e.CourseId == course.Id);
+      return enrollment != null;
+    }
+
+    return false;
+  }
+
+  public async Task<ApiResponse<List<CourseResponseDTO>>> GetAllCoursesAsync()
+  {
+    var courses = await _context.Courses
+      .Include(c => c.Category)
+      .Include(c => c.Instructor)
+      .ToListAsync();
+
+    return ApiResponse<List<CourseResponseDTO>>.Success([.. courses.Select(c => _dtoService.CourseToDto(c))], "Lấy danh sách khoá học.");
+  }
+
+  public async Task<ApiResponse<Dictionary<string, object?>>> GetCourseAsync(int? userId, string slug)
+  {
+    var course = await _context.Courses
+      .Include(c => c.Category)
+      .Include(c => c.Instructor)
+      .FirstOrDefaultAsync(c => c.Slug == slug);
+
+    if (course == null)
+    {
+      return ApiResponse<Dictionary<string, object?>>.Error("Không tìm thấy khoá học.", (int)HttpStatusCode.BadRequest);
+    }
+
+    var enrollment = await _context.Enrollments
+      .FirstOrDefaultAsync(e => e.UserId == userId && e.Course.Slug == slug);
+
+    var response = new Dictionary<string, object?>
+    {
+      ["course"] = _dtoService.CourseToDto(course),
+      ["enrollment"] = enrollment == null ? null : _dtoService.EnrollmentToDto(enrollment)
+    };
+
+    return ApiResponse<Dictionary<string, object?>>.Success(response, "Lấy thống tin khoá học.");
+  }
+
+  public async Task<ApiResponse<EnrollmentDto>> EnrollCourseAsync(int userId, string slug)
+  {
+    var course = await _context.Courses
+      .Include(c => c.Category)
+      .Include(c => c.Instructor)
+      .FirstOrDefaultAsync(c => c.Slug == slug);
+
+    if (course == null)
+    {
+      return ApiResponse<EnrollmentDto>.Error("Không tìm thấy khoá học.", (int)HttpStatusCode.BadRequest);
+    }
+
+    var enrollment = await _context.Enrollments
+      .FirstOrDefaultAsync(e => e.UserId == userId && e.Course.Slug == slug);
+
+    if (enrollment != null)
+    {
+      return ApiResponse<EnrollmentDto>.Error("Bản khóa học đã đăng ký.", (int)HttpStatusCode.BadRequest);
+    }
+
+    var newEnrollment = new Enrollment
+    {
+      UserId = userId,
+      CourseId = course.Id,
+      EnrolledAt = DateTime.UtcNow,
+      Status = EnrollmentStatus.Active,
+    };
+
+    await _context.Enrollments.AddAsync(newEnrollment);
+    await _context.SaveChangesAsync();
+
+    return ApiResponse<EnrollmentDto>.Success(_dtoService.EnrollmentToDto(newEnrollment), "Đăng ký khoá học.");
+  }
+
   public async Task<ApiResponse<CourseResponseDTO>> GetInformationAsync(int instructorId, string slug)
   {
     var course = await _context.Courses
@@ -164,7 +176,7 @@ public class CourseService : ICourseService
       return ApiResponse<CourseResponseDTO>.Error("Không tìm thấy khoá học.", (int)HttpStatusCode.BadRequest);
     }
 
-    return ApiResponse<CourseResponseDTO>.Success(CourseToDto(course), "Lấy danh sách khoá học.");
+    return ApiResponse<CourseResponseDTO>.Success(_dtoService.CourseToDto(course), "Lấy danh sách khoá học.");
   }
 
   public async Task<ApiResponse<CourseResponseDTO>> CreateCourseAsync(int authId, CreateCourseDto dto, IFormFile? file)
@@ -220,8 +232,8 @@ public class CourseService : ICourseService
     return ApiResponse<CourseResponseDTO>.Success(new CourseResponseDTO
     {
       Id = course.Id,
-      Category = _categoryService.CategotyToDto(course.Category),
-      Instructor = _instructorService.InstructorToDto(auth.Instructor),
+      Category = _dtoService.CategotyToDto(course.Category),
+      Instructor = _dtoService.InstructorToDto(auth.Instructor),
       Title = course.Title,
       Slug = course.Slug,
       ShortDescription = course.ShortDescription,
@@ -237,19 +249,25 @@ public class CourseService : ICourseService
     }, "Tạo khóa học thành công.");
   }
 
-  public async Task<ApiResponse<Section>> UpdateSectionAsync(int instructorId, SectionRequestDto dto)
+
+
+  // ------- SECTION ------
+
+
+
+  public async Task<ApiResponse<SectionResponseDto>> UpdateSectionAsync(int instructorId, SectionRequestDto dto)
   {
     // Console.WriteLine($"instructorId: {instructorId}, dto.Id: {JsonSerializer.Serialize(dto)}");
     var course = await _context.Courses.FirstOrDefaultAsync(c => c.Id == dto.CourseId);
 
     if (course != null && course.InstructorId != instructorId)
     {
-      return ApiResponse<Section>.Error("Không đủ quyền thực hiện hành động này.", (int)HttpStatusCode.Unauthorized);
+      return ApiResponse<SectionResponseDto>.Error("Không đủ quyền thực hiện hành động này.", (int)HttpStatusCode.Unauthorized);
     }
 
     if (course == null)
     {
-      return ApiResponse<Section>.Error("Không tìm thấy khoá học.", (int)HttpStatusCode.BadRequest);
+      return ApiResponse<SectionResponseDto>.Error("Không tìm thấy khoá học.", (int)HttpStatusCode.BadRequest);
     }
 
     var existing = await _context.Sections.FirstOrDefaultAsync(s => s.Id == dto.Id);
@@ -279,7 +297,7 @@ public class CourseService : ICourseService
       await _context.SaveChangesAsync();
     }
 
-    return ApiResponse<Section>.Success(existing, "Cập nhật chủ đề thành công.");
+    return ApiResponse<SectionResponseDto>.Success(await _dtoService.SectionToDto(existing), "Cập nhật chủ đề thành công.");
   }
 
   public async Task<ApiResponse<InstructorSectionsResponseDTO>> GetSectionsAsync(string slug, int instructorId)
@@ -304,12 +322,16 @@ public class CourseService : ICourseService
       .AsNoTracking()
       .ToListAsync();
 
-    var sectionDtos = list.Select(s => SectionToDto(s)).ToList();
+    var sectionDtos = new List<SectionResponseDto>();
+    foreach (var s in list)
+    {
+      sectionDtos.Add(await _dtoService.SectionToDto(s));
+    }
 
     return ApiResponse<InstructorSectionsResponseDTO>.Success(new InstructorSectionsResponseDTO
     {
       Sections = sectionDtos,
-      Course = CourseToDto(course)
+      Course = _dtoService.CourseToDto(course)
     }, "Lấy danh sách chủ đề.");
   }
 
@@ -333,76 +355,14 @@ public class CourseService : ICourseService
     return ApiResponse<object>.Success(null, "Xóa chủ đề thành công.");
   }
 
-  public async Task<ApiResponse<LectureResponseDTO>> UpdateLectureAsync(int instructorId, LectureRequestDto dto)
+
+  // ------- LECTURE ------
+
+
+
+  public async Task<ApiResponse<Dictionary<string, object?>>> GetLectureAsync(int instructorId, string slug, Role role, Guid? lectureId)
   {
-    var section = await _context.Sections.Include(c => c.Course).FirstOrDefaultAsync(s => s.Id == dto.SectionId);
-
-    if (section != null && section.Course.InstructorId != instructorId)
-    {
-      return ApiResponse<LectureResponseDTO>.Error("Không đủ quyền thực hiện hành động này.", (int)HttpStatusCode.Unauthorized);
-    }
-
-    if (section == null)
-    {
-      return ApiResponse<LectureResponseDTO>.Error("Không tìm thấy chủ đề.", (int)HttpStatusCode.BadRequest);
-    }
-
-    var existing = await _context.Lectures.FirstOrDefaultAsync(l => l.Id == dto.Id);
-    if (existing != null)
-    {
-      existing.Title = dto.Title;
-      existing.Order = dto.Order;
-      existing.UpdatedAt = DateTime.UtcNow;
-      existing.Description = dto.Description;
-      existing.IsPreviewable = dto.IsPreviewable;
-
-      await _context.SaveChangesAsync();
-    }
-    else
-    {
-      existing = new Lecture
-      {
-        Id = dto.Id,
-        Title = dto.Title,
-        Order = dto.Order,
-        Description = dto.Description,
-        IsPreviewable = dto.IsPreviewable,
-        Status = Status.Pending,
-        CreatedAt = DateTime.UtcNow,
-        UpdatedAt = DateTime.UtcNow
-      };
-
-      existing.Section = section;
-
-      _context.Lectures.Add(existing);
-      await _context.SaveChangesAsync();
-    }
-
-    return ApiResponse<LectureResponseDTO>.Success(LectureToDto(existing), "Cập nhật bài giảng thành công.");
-  }
-
-  public async Task<ApiResponse<object>> DeleteLectureAsync(int instructorId, Guid lectureId)
-  {
-    var lecture = await _context.Lectures.Include(l => l.Section).ThenInclude(s => s.Course).FirstOrDefaultAsync(l => l.Id == lectureId);
-
-    if (lecture != null && lecture.Section.Course.InstructorId != instructorId)
-    {
-      return ApiResponse<object>.Error("Không đủ quyền thực hiện hành động này.", (int)HttpStatusCode.Unauthorized);
-    }
-
-    if (lecture == null)
-    {
-      return ApiResponse<object>.Error("Không tìm thấy bài giảng.", (int)HttpStatusCode.BadRequest);
-    }
-
-    _context.Lectures.Remove(lecture);
-    await _context.SaveChangesAsync();
-
-    return ApiResponse<object>.Success(null, "Xóa bài giảng thành công.");
-  }
-
-  public async Task<ApiResponse<Dictionary<string, object?>>> GetLectureAsync(int instructorId, string slug, Guid? lectureId)
-  {
+    Console.WriteLine("--------->GetLectureAsync");
     Lecture? lecture;
     if (lectureId.HasValue)
     {
@@ -417,12 +377,13 @@ public class CourseService : ICourseService
         .Include(l => l.Section)
           .ThenInclude(s => s.Course)
           .ThenInclude(c => c.Instructor)
+        .Include(l => l.Video)
         .FirstOrDefaultAsync(l => l.Id == lectureId);
 
-      if (lecture != null && lecture.Section.Course.InstructorId != instructorId)
-      {
-        return ApiResponse<Dictionary<string, object?>>.Error("Không đủ quyền thực hiện hành động này.", (int)HttpStatusCode.Unauthorized);
-      }
+      // if (lecture != null && lecture.Section.Course.InstructorId != instructorId)
+      // {
+      //   return ApiResponse<Dictionary<string, object?>>.Error("Không đủ quyền thực hiện hành động này.", (int)HttpStatusCode.Unauthorized);
+      // }
 
       if (lecture == null)
       {
@@ -452,6 +413,15 @@ public class CourseService : ICourseService
       return ApiResponse<Dictionary<string, object?>>.Success(null);
     }
 
+    var signedUrl = (lecture.Video == null || lecture.Video.HlsDirectoryKey == null) ? null : _s3Service.GenerateSignedUrl(lecture.Video.HlsDirectoryKey);
+
+    var chatsDto = new List<VideoChatResponseDto>();
+    if (lecture.Video != null)
+    {
+      var chats = await _context.VideoChats.Include(c => c.Video).ThenInclude(c => c.Lecture).ThenInclude(l => l.Section).ThenInclude(s => s.Course).Include(c => c.User).Include(c => c.Instructor).Where(c => c.VideoId == lecture.Video.Id).ToListAsync();
+      chatsDto = chats.Select(c => _dtoService.VideoChatToDto(c)).ToList();
+    }
+
     var response = new Dictionary<string, object?>
     {
       ["lecture"] = new LectureResponseDTO
@@ -464,13 +434,135 @@ public class CourseService : ICourseService
         IsPreviewable = lecture.IsPreviewable,
         CreatedAt = lecture.CreatedAt,
         UpdatedAt = lecture.UpdatedAt,
-        Status = lecture.Status
       },
-      ["structure"] = lecture.Section.Course.Sections.Select(s => StructureCourse(s)).ToList(),
-      ["course"] = CourseToDto(lecture.Section.Course)
+      ["structure"] = lecture.Section.Course.Sections.Select(s => _dtoService.StructureCourseDto(s)).ToList(),
+      ["course"] = _dtoService.CourseToDto(lecture.Section.Course),
+      ["video"] = lecture.Video == null ? null : _dtoService.VideoToDto(lecture.Video),
+      ["signedUrl"] = signedUrl,
+      ["chats"] = chatsDto
     };
 
     return ApiResponse<Dictionary<string, object?>>.Success(response);
+  }
+
+  public async Task<ApiResponse<LectureModeration>> UpdateLectureRequestAsync(int instructorId, LectureRequestDto dto, Guid id)
+  {
+    Console.WriteLine("--------->UpdateLectureRequestAsync" + dto.SectionId + dto.Id + dto.Title + dto.Description + dto.Order + dto.IsPreviewable);
+    var course = await _context.Sections.Include(s => s.Course).FirstOrDefaultAsync(s => s.Id == dto.SectionId);
+
+    if (course != null && course.Course.InstructorId != instructorId)
+    {
+      return ApiResponse<LectureModeration>.Error("Không đủ quyền thực hiện hành động.", (int)HttpStatusCode.Unauthorized);
+    }
+
+    if (course == null)
+    {
+      return ApiResponse<LectureModeration>.Error("Không tìm thấy bài giảng.", (int)HttpStatusCode.BadRequest);
+    }
+
+    var lecture = new LectureModerationRequestDto
+    {
+      Lecture = dto,
+      Video = null
+    };
+
+    var lectureModeration = await _context.LectureModerations.FirstOrDefaultAsync(l => l.Id == id);
+
+    if (lectureModeration == null)
+    {
+      lectureModeration = new LectureModeration
+      {
+        Id = id,
+        ActionType = ModerationAction.Update,
+        NewData = JsonSerializer.Serialize(lecture),
+        Status = Status.Pending,
+        Reason = "",
+        InstructorId = instructorId,
+        SectionId = dto.SectionId,
+      };
+      _context.LectureModerations.Add(lectureModeration);
+    }
+    else
+    {
+      lectureModeration.ActionType = ModerationAction.Update;
+      lectureModeration.Status = Status.Pending;
+      lectureModeration.NewData = JsonSerializer.Serialize(lecture);
+      lectureModeration.AdminId = null;
+    }
+
+    await _context.SaveChangesAsync();
+
+    return ApiResponse<LectureModeration>.Success(lectureModeration, "Thao tác thành công, vui lòng chờ duyệt từ Admin.");
+  }
+
+  public async Task<ApiResponse<LectureModeration>> CancelLectureRequestAsync(int instructorId, Guid sectionId, Guid id)
+  {
+    var course = await _context.Sections.Include(s => s.Course).FirstOrDefaultAsync(s => s.Id == sectionId);
+
+    if (course != null && course.Course.InstructorId != instructorId)
+    {
+      return ApiResponse<LectureModeration>.Error("Không đủ quyền thực hiện hành động.", (int)HttpStatusCode.Unauthorized);
+    }
+
+    if (course == null)
+    {
+      return ApiResponse<LectureModeration>.Error("Không tìm thấy bài giảng.", (int)HttpStatusCode.BadRequest);
+    }
+
+    var lectureModeration = await _context.LectureModerations.FirstOrDefaultAsync(l => l.Id == id);
+
+    if (lectureModeration == null)
+    {
+      return ApiResponse<LectureModeration>.Error("Không tìm thấy bài giảng.", (int)HttpStatusCode.BadRequest);
+    }
+    else
+    {
+      lectureModeration.Status = Status.Canceled;
+    }
+
+    await _context.SaveChangesAsync();
+
+    return ApiResponse<LectureModeration>.Success(lectureModeration, "Thao tác thành công, vui lòng chờ duyệt từ Admin.");
+  }
+
+  public async Task<ApiResponse<LectureModeration>> DeleteLectureRequestAsync(int instructorId, Guid id)
+  {
+    var lectureModeration = _context.LectureModerations.FirstOrDefault(l => l.Id == id);
+
+    var course = await _context.Sections.Include(s => s.Course).FirstOrDefaultAsync(s => s.Id == lectureModeration.SectionId);
+
+    if (course != null && course.Course.InstructorId != instructorId)
+    {
+      return ApiResponse<LectureModeration>.Error("Không đủ quyền thực hiện hành động.", (int)HttpStatusCode.Unauthorized);
+    }
+
+    if (course == null)
+    {
+      return ApiResponse<LectureModeration>.Error("Không tìm thấy bài giảng.", (int)HttpStatusCode.BadRequest);
+    }
+
+    if (lectureModeration == null)
+    {
+      return ApiResponse<LectureModeration>.Error("Không tìm thấy bài giảng.", (int)HttpStatusCode.BadRequest);
+    }
+
+    if (lectureModeration.LectureId == null)
+    {
+      _context.LectureModerations.Remove(lectureModeration);
+      return ApiResponse<LectureModeration>.Success(null, "Thao tác thành công.");
+    }
+    else
+    {
+      lectureModeration.ActionType = ModerationAction.Delete;
+      lectureModeration.Status = Status.Pending;
+      lectureModeration.NewData = "";
+      lectureModeration.AdminId = null;
+      _context.LectureModerations.Update(lectureModeration);
+    }
+
+    await _context.SaveChangesAsync();
+
+    return ApiResponse<LectureModeration>.Success(lectureModeration, "Thao tác thành công, vui lòng chờ duyệt từ Admin.");
   }
 
   public async Task<ApiResponse<Dictionary<string, object?>>> GenerateUploadUrlAsync(int instructorId, Guid lectureId, UploadRequestDto dto)
@@ -518,7 +610,10 @@ public class CourseService : ICourseService
       FileSize = dto.FileSize,
       LectureId = lectureId,
       Status = VideoProcessingStatus.Pending,
-      UploadedAt = DateTime.UtcNow
+      UploadedAt = DateTime.UtcNow,
+      Width = dto.Width,
+      Height = dto.Height,
+      DurationSeconds = dto.DurationSeconds
     };
 
     _context.Videos.Add(video);
@@ -528,7 +623,7 @@ public class CourseService : ICourseService
 
     var response = new Dictionary<string, object?>
     {
-      ["video"] = VideoToDto(video),
+      ["video"] = _dtoService.VideoToDto(video),
       ["url"] = url
     };
 
@@ -546,9 +641,6 @@ public class CourseService : ICourseService
 
     video.HlsMasterPlaylistUrl = dto.HlsMasterPlaylistUrl;
     video.HlsDirectoryKey = dto.HlsDirectoryKey;
-    video.DurationSeconds = dto.DurationSeconds;
-    video.Width = dto.Width;
-    video.Height = dto.Height;
     video.Status = VideoProcessingStatus.Completed;
     video.UploadedAt = DateTime.UtcNow;
 

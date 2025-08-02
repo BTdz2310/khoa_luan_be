@@ -6,4 +6,6 @@ public interface IS3Service
     Task DeleteFileAsync(string fileKey);
     string GetFileUrl(string fileKey);
     string GenerateUploadUrl(string filePath, TimeSpan validDuration, string contentType);
+    string GenerateSignedUrl(string hlsDirectoryKey, int expireSeconds = 3600);
+    public string GenerateUploadUrlWithAutoContentType(Guid liveId, string fileName);
 }

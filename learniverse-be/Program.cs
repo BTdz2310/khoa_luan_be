@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using Amazon.S3;
 using learniverse_be.Data;
 using learniverse_be.Extensions;
+using learniverse_be.Hubs;
 using learniverse_be.Models;
 using learniverse_be.Services;
 using learniverse_be.Services.Interfaces;
@@ -16,16 +17,23 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+  options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+  options.EnableSensitiveDataLogging();
+});
+
+builder.Services.AddSignalR();
 
 builder.Services.AddCors(options =>
 {
   options.AddPolicy("AllowAll", policy =>
-  {
-    policy.AllowAnyOrigin()
-      .AllowAnyMethod()
-      .AllowAnyHeader();
-  });
+    {
+      policy
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials()
+        .SetIsOriginAllowed(_ => true);
+    });
 });
 
 builder.Services.AddControllers()
@@ -101,6 +109,25 @@ builder.Services.AddAuthentication(options =>
     ValidAudience = jwtSection.GetValue<string>("Audience"),
     IssuerSigningKey = new SymmetricSecurityKey(secretKey)
   };
+
+  options.Events = new JwtBearerEvents
+  {
+    OnMessageReceived = context =>
+    {
+      var accessToken = context.Request.Query["access_token"];
+      var path = context.HttpContext.Request.Path;
+
+      if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+      {
+        context.Token = accessToken;
+      }
+
+      return Task.CompletedTask;
+    }
+  };
+  options.RequireHttpsMetadata = false;
+  options.SaveToken = true;
+  // options.TokenValidationParameters = new TokenValidationParameters { ...};
 });
 
 // builder.Services.AddControllers()
@@ -164,6 +191,10 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IInstructorService, InstructorService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<IDtoService, DtoService>();
+builder.Services.AddScoped<ILiveService, LiveService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 
 builder.WebHost.ConfigureKestrel(options =>
 {
@@ -212,5 +243,7 @@ app.UseAuthorization();
 //     .WithStaticAssets();
 
 app.MapControllers();
+
+app.MapHub<LectureHub>("/hubs/lecture");
 
 app.Run();

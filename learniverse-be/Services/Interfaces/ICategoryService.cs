@@ -5,5 +5,4 @@ namespace learniverse_be.Services.Interfaces;
 public interface ICategoryService
 {
   public Task<ApiResponse<List<CategoriesDto>>> GetCategoriesAsync();
-  public CategoriesDto CategotyToDto(Category category);
 }

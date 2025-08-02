@@ -6,5 +6,7 @@ public enum Status
   Rejected = 3,
   Draft = 4,
   Archived = 5,
-  Deleted = 6
+  Deleted = 6,
+  Canceled = 7,
+  Aproved = 8
 }

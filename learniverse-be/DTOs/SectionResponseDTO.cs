@@ -9,4 +9,5 @@ public class SectionResponseDto
   public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
   public DateTime UpdatedAt { get; set; }
   public List<LectureResponseDTO> Lectures { get; set; } = new();
+  public List<LectureModeration> LectureModerations { get; set; } = new();
 }

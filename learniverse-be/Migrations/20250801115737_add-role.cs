@@ -5,24 +5,25 @@
 namespace learniverse_be.Migrations
 {
     /// <inheritdoc />
-    public partial class courseslugunique : Migration
+    public partial class addrole : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateIndex(
-                name: "IX_Courses_Slug",
-                table: "Courses",
-                column: "Slug",
-                unique: true);
+            migrationBuilder.AddColumn<int>(
+                name: "Role",
+                table: "Auths",
+                type: "integer",
+                nullable: false,
+                defaultValue: 0);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_Courses_Slug",
-                table: "Courses");
+            migrationBuilder.DropColumn(
+                name: "Role",
+                table: "Auths");
         }
     }
 }

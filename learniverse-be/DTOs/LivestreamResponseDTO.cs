@@ -1,26 +1,18 @@
-namespace learniverse_be.Models;
+using learniverse_be.Models;
 
-public enum LivestreamStatus
-{
-  Scheduled = 0,
-  Live = 1,
-  Finished = 2,
-  Canceled = 3
-}
+namespace learniverse_be.DTOs;
 
-public class Livestream
+public class LivestreamResponseDto
 {
   public Guid Id { get; set; } = Guid.NewGuid();
-
-  public Guid CourseId { get; set; }
-  public Course Course { get; set; } = default!;
+  public CourseResponseDTO Course { get; set; } = default!;
 
   public Guid StreamKey { get; set; } = Guid.NewGuid();
 
   public DateTimeOffset StartTime { get; set; }
   public DateTimeOffset EndTime { get; set; }
 
-  public LivestreamStatus Status { get; set; } = LivestreamStatus.Scheduled;
+  public LivestreamStatus Status { get; set; }
 
   public string Title { get; set; } = default!;
 

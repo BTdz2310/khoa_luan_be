@@ -18,7 +18,10 @@ public class AppDbContext : DbContext
     public DbSet<Section> Sections => Set<Section>();
     public DbSet<Lecture> Lectures => Set<Lecture>();
     public DbSet<Video> Videos => Set<Video>();
-
+    public DbSet<VideoChat> VideoChats => Set<VideoChat>();
+    public DbSet<Enrollment> Enrollments => Set<Enrollment>();
+    public DbSet<Livestream> Livestreams => Set<Livestream>();
+    public DbSet<LectureModeration> LectureModerations => Set<LectureModeration>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

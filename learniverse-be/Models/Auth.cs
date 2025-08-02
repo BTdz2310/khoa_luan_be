@@ -25,6 +25,7 @@ public class Auth
   public Otp Otp { get; set; } = default!;
 
   public bool IsActive { get; set; } = false;
+  public Role Role { get; set; } = Role.User;
 
   public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

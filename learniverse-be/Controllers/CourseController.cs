@@ -16,7 +16,7 @@ public class CourseController(ILogger<CourseController> logger, ICourseService c
   private readonly IConfiguration _config = config;
 
   [Authorize]
-  [HttpPost("")]
+  [HttpPost("instructor")]
   public async Task<ActionResult<ApiResponse<CourseResponseDTO>>> CreateCourse([FromForm] CreateCourseDto dto, IFormFile? file)
   {
     var authId = User.FindFirstValue("authId");
@@ -30,8 +30,25 @@ public class CourseController(ILogger<CourseController> logger, ICourseService c
     return StatusCode(result.StatusCode, result);
   }
 
-  [Authorize]
   [HttpGet("")]
+  public async Task<ActionResult<ApiResponse<CourseResponseDTO>>> GetAllCourses()
+  {
+    var result = await _courseService.GetAllCoursesAsync();
+    return StatusCode(result.StatusCode, result);
+  }
+
+  [HttpGet("{slug}")]
+  [Authorize]
+  public async Task<ActionResult<ApiResponse<CourseResponseDTO>>> GetCourse(string slug)
+  {
+    var userId = User.FindFirstValue("userId");
+
+    var result = await _courseService.GetCourseAsync(userId != null ? int.Parse(userId) : (int?)null, slug);
+    return StatusCode(result.StatusCode, result);
+  }
+
+  [Authorize]
+  [HttpGet("instructor")]
   public async Task<ActionResult<ApiResponse<CourseResponseDTO>>> GetCourses()
   {
     var authId = User.FindFirstValue("authId");
@@ -46,13 +63,25 @@ public class CourseController(ILogger<CourseController> logger, ICourseService c
   }
 
   [Authorize]
+  [HttpPost("{slug}/enroll")]
+  public async Task<ActionResult<ApiResponse<EnrollmentDto>>> EnrollCourse([FromRoute] string slug)
+  {
+    var iId = User.FindFirstValue("userId");
+
+    if (string.IsNullOrEmpty(iId) || !int.TryParse(iId, out var iIdInt))
+    {
+      return StatusCode((int)HttpStatusCode.Unauthorized, ApiResponse<CourseResponseDTO>.Error("Token không hợp lệ.", (int)HttpStatusCode.Unauthorized));
+    }
+
+    var result = await _courseService.EnrollCourseAsync(iIdInt, slug);
+    return StatusCode(result.StatusCode, result);
+  }
+
+  [Authorize]
   [HttpGet("instructor/{slug}")]
   public async Task<ActionResult<ApiResponse<CourseResponseDTO>>> GetInformation([FromRoute] string slug)
   {
     var iId = User.FindFirstValue("instructorId");
-    // return StatusCode((int)HttpStatusCode.Unauthorized, ApiResponse<CourseResponseDTO>.Error("Token không hợp lệ.", (int)HttpStatusCode.Unauthorized));
-
-    Console.WriteLine($"iId: {iId}, {slug}");
 
     if (string.IsNullOrEmpty(iId) || !int.TryParse(iId, out var iIdInt))
     {
@@ -109,8 +138,8 @@ public class CourseController(ILogger<CourseController> logger, ICourseService c
   }
 
   [Authorize]
-  [HttpPost("instructor/lecture")]
-  public async Task<ActionResult<ApiResponse<Lecture>>> UpdateLecture([FromBody] LectureRequestDto dto)
+  [HttpPost("instructor/lecture/{id}")]
+  public async Task<ActionResult<ApiResponse<Lecture>>> UpdateLectureRequest([FromBody] LectureRequestDto dto, [FromRoute] Guid id)
   {
     var instructorId = User.FindFirstValue("instructorId");
 
@@ -119,13 +148,13 @@ public class CourseController(ILogger<CourseController> logger, ICourseService c
       return StatusCode((int)HttpStatusCode.Unauthorized, ApiResponse<Lecture>.Error("Token không hợp lệ.", (int)HttpStatusCode.Unauthorized));
     }
 
-    var result = await _courseService.UpdateLectureAsync(instructorIdInt, dto);
+    var result = await _courseService.UpdateLectureRequestAsync(instructorIdInt, dto, id);
     return StatusCode(result.StatusCode, result);
   }
 
   [Authorize]
   [HttpDelete("instructor/lecture/{id}")]
-  public async Task<ActionResult<ApiResponse<Lecture>>> DeleteLecture([FromRoute] Guid id)
+  public async Task<ActionResult<ApiResponse<Lecture>>> DeleteLectureRequest([FromRoute] Guid id)
   {
     var instructorId = User.FindFirstValue("instructorId");
 
@@ -134,21 +163,37 @@ public class CourseController(ILogger<CourseController> logger, ICourseService c
       return StatusCode((int)HttpStatusCode.Unauthorized, ApiResponse<Lecture>.Error("Token không hợp lệ.", (int)HttpStatusCode.Unauthorized));
     }
 
-    var result = await _courseService.DeleteLectureAsync(instructorIdInt, id);
+    var result = await _courseService.DeleteLectureRequestAsync(instructorIdInt, id);
+    return StatusCode(result.StatusCode, result);
+  }
+
+  [Authorize]
+  [HttpDelete("instructor/lecture/{sectionId}/{id}/cancel")]
+  public async Task<ActionResult<ApiResponse<Lecture>>> CancelLectureRequest([FromRoute] Guid id, [FromRoute] Guid sectionId)
+  {
+    var instructorId = User.FindFirstValue("instructorId");
+
+    if (string.IsNullOrEmpty(instructorId) || !int.TryParse(instructorId, out var instructorIdInt))
+    {
+      return StatusCode((int)HttpStatusCode.Unauthorized, ApiResponse<Lecture>.Error("Token không hợp lệ.", (int)HttpStatusCode.Unauthorized));
+    }
+
+    var result = await _courseService.CancelLectureRequestAsync(instructorIdInt, sectionId, id);
     return StatusCode(result.StatusCode, result);
   }
 
   [HttpGet("instructor/lecture/{slug}")]
-  public async Task<ActionResult<object>> GetLecture([FromRoute] string slug, [FromQuery] Guid? lectureId)
+  public async Task<ActionResult<object>> GetLecture([FromRoute] string slug, [FromQuery] Guid? lectureId, [FromQuery] Role role)
   {
-    var instructorId = User.FindFirstValue("instructorId");
+    // var instructorId = User.FindFirstValue("instructorId");
+    var identifierId = role == Role.User ? User.FindFirstValue("userId") : User.FindFirstValue("instructorId");
 
-    if (string.IsNullOrEmpty(instructorId) || !int.TryParse(instructorId, out var instructorIdInt))
+    if (string.IsNullOrEmpty(identifierId) || !int.TryParse(identifierId, out var instructorIdInt))
     {
       return StatusCode((int)HttpStatusCode.Unauthorized, ApiResponse<Lecture>.Error("Token không hợp lệ.", (int)HttpStatusCode.Unauthorized));
     }
 
-    var result = await _courseService.GetLectureAsync(instructorIdInt, slug, lectureId);
+    var result = await _courseService.GetLectureAsync(instructorIdInt, slug, role, lectureId);
     return StatusCode(result.StatusCode, result);
   }
 

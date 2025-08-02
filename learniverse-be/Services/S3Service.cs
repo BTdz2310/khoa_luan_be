@@ -42,9 +42,43 @@ public class S3Service : IS3Service
     return _s3Client.GetPreSignedURL(request);
   }
 
+  public string GenerateSignedUrl(string hlsDirectoryKey, int expireSeconds = 3600)
+  {
+    // var fileName = $"{hlsDirectoryKey.Split('/').Last()}.m3u8";
+    // var key = $"{hlsDirectoryKey}/{fileName}";
+
+    var request = new GetPreSignedUrlRequest
+    {
+      BucketName = _bucketName,
+      Key = hlsDirectoryKey,
+      Expires = DateTime.UtcNow.AddSeconds(expireSeconds),
+      Verb = HttpVerb.GET,
+      ResponseHeaderOverrides = new ResponseHeaderOverrides
+      {
+        ContentType = "application/x-mpegURL"
+      }
+    };
+
+    string url = _s3Client.GetPreSignedURL(request);
+    return url;
+  }
+
   public Task DeleteFileAsync(string fileKey) =>
     _s3Client.DeleteObjectAsync(_bucketName, fileKey);
 
   public string GetFileUrl(string fileKey) =>
     $"https://{_bucketName}.s3.amazonaws.com/{fileKey}";
+
+
+  public string GenerateUploadUrlWithAutoContentType(Guid liveId, string fileName)
+  {
+    var contentType = Path.GetExtension(fileName).ToLower() switch
+    {
+      ".m3u8" => "application/vnd.apple.mpegurl",
+      ".ts" => "video/mp2t",
+      _ => null
+    };
+
+    return GenerateUploadUrl($"lives/{liveId}/{fileName}", TimeSpan.FromHours(2), contentType);
+  }
 }

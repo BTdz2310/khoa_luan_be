@@ -10,4 +10,5 @@ public class AuthDto
   public UserDto? User { get; set; }
   public InstructorResponseDto? Instructor { get; set; }
   public DateTime CreatedAt { get; set; }
+  public Role Role { get; set; }
 }

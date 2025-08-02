@@ -27,6 +27,5 @@ public class Lecture
 
   public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
   public DateTime UpdatedAt { get; set; }
-  public Status Status { get; set; }
   public Video? Video { get; set; } = default!;
 }
